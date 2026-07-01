@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pasta Matrix</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #000;
+      }
+
+      body {
+        position: fixed;
+        inset: 0;
+      }
+
+      canvas {
+        position: fixed;
+        inset: 0;
+        display: block;
+        width: 100vw;
+        height: 100vh;
+        background: #000;
+      }
+
+      .load-error {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: 2rem;
+        color: #68ff8f;
+        font-family:
+          ui-monospace,
+          "SFMono-Regular",
+          Consolas,
+          "Liberation Mono",
+          monospace;
+        font-size: clamp(1rem, 3vw, 1.25rem);
+        line-height: 1.5;
+        text-align: center;
+        text-shadow: 0 0 1rem rgba(0, 255, 102, 0.75);
+      }
+
+      .exit-colander {
+        position: fixed;
+        left: 50%;
+        bottom: 1rem;
+        z-index: 2;
+        transform: translateX(-50%);
+        color: #b7ffca;
+        font-family:
+          ui-monospace,
+          "SFMono-Regular",
+          Consolas,
+          "Liberation Mono",
+          monospace;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        text-decoration: none;
+        white-space: nowrap;
+        padding: 0.35rem 0.55rem;
+        border: 1px solid rgba(104, 255, 143, 0.35);
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.45);
+        box-shadow: 0 0 0.75rem rgba(0, 255, 102, 0.2);
+        opacity: 0.6;
+        transition:
+          opacity 160ms ease,
+          border-color 160ms ease,
+          box-shadow 160ms ease;
+      }
+
+      .exit-colander:hover,
+      .exit-colander:focus {
+        opacity: 1;
+        border-color: rgba(104, 255, 143, 0.8);
+        box-shadow: 0 0 1.2rem rgba(0, 255, 102, 0.45);
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="pasta-matrix" aria-label="Falling pasta Matrix animation"></canvas>
+    <a class="exit-colander" href="/index.html">Exit the Colander</a>
+
+    <script>
+      (() => {
+        const canvas = document.getElementById("pasta-matrix");
+        const ctx = canvas.getContext("2d");
+        const shapeSources = [
+          "assets/shape_1.png",
+          "assets/shape_2.png",
+          "assets/shape_3.png",
+          "assets/shape_4.png",
+          "assets/shape_5.png",
+          "assets/shape_6.png",
+        ];
+
+        const state = {
+          width: 0,
+          height: 0,
+          dpr: 1,
+          cellSize: 34,
+          density: 0.67,
+          columnStride: 34,
+          columns: 0,
+          drops: [],
+          sprites: [],
+          lastTime: 0,
+          frameDebt: 0,
+        };
+
+        const randomBetween = (min, max) => min + Math.random() * (max - min);
+
+        const hexToRgb = (hex) => {
+          const value = hex.replace("#", "");
+
+          return {
+            r: parseInt(value.slice(0, 2), 16),
+            g: parseInt(value.slice(2, 4), 16),
+            b: parseInt(value.slice(4, 6), 16),
+          };
+        };
+
+        const loadImage = (src) =>
+          new Promise((resolve, reject) => {
+            const image = new Image();
+            image.onload = () => resolve(image);
+            image.onerror = () => reject(new Error(`Could not load ${src}`));
+            image.src = src;
+          });
+
+        const makeTintedSprite = (image, color) => {
+          const source = document.createElement("canvas");
+          const sourceCtx = source.getContext("2d");
+          const tint = hexToRgb(color);
+
+          source.width = image.naturalWidth || image.width;
+          source.height = image.naturalHeight || image.height;
+
+          sourceCtx.drawImage(image, 0, 0);
+
+          const imageData = sourceCtx.getImageData(0, 0, source.width, source.height);
+          const data = imageData.data;
+          let minX = source.width;
+          let minY = source.height;
+          let maxX = 0;
+          let maxY = 0;
+          let hasShapePixels = false;
+
+          for (let y = 0; y < source.height; y += 1) {
+            for (let x = 0; x < source.width; x += 1) {
+              const index = (y * source.width + x) * 4;
+              const alpha = data[index + 3];
+              const brightness = Math.max(data[index], data[index + 1], data[index + 2]);
+
+              if (alpha === 0 || brightness < 24) {
+                data[index + 3] = 0;
+                continue;
+              }
+
+              const intensity = Math.min(1, (brightness - 24) / 231);
+              const glow = 0.42 + intensity * 0.58;
+
+              data[index] = tint.r * glow;
+              data[index + 1] = tint.g * glow;
+              data[index + 2] = tint.b * glow;
+              data[index + 3] = Math.min(255, alpha * (0.35 + intensity * 0.9));
+
+              minX = Math.min(minX, x);
+              minY = Math.min(minY, y);
+              maxX = Math.max(maxX, x);
+              maxY = Math.max(maxY, y);
+              hasShapePixels = true;
+            }
+          }
+
+          sourceCtx.putImageData(imageData, 0, 0);
+
+          if (!hasShapePixels) {
+            return source;
+          }
+
+          const padding = 3;
+          const cropX = Math.max(0, minX - padding);
+          const cropY = Math.max(0, minY - padding);
+          const cropWidth = Math.min(source.width - cropX, maxX - minX + padding * 2);
+          const cropHeight = Math.min(source.height - cropY, maxY - minY + padding * 2);
+          const sprite = document.createElement("canvas");
+          const spriteCtx = sprite.getContext("2d");
+
+          sprite.width = cropWidth;
+          sprite.height = cropHeight;
+          spriteCtx.drawImage(
+            source,
+            cropX,
+            cropY,
+            cropWidth,
+            cropHeight,
+            0,
+            0,
+            cropWidth,
+            cropHeight,
+          );
+
+          return sprite;
+        };
+
+        const makeDrop = (stagger = false) => ({
+          y: stagger
+            ? randomBetween(-state.height, state.height)
+            : randomBetween(-state.cellSize * 24, 0),
+          speed: randomBetween(0.55, 1.75),
+          scale: randomBetween(0.72, 1.18),
+          opacity: randomBetween(0.52, 0.95),
+          drift: randomBetween(-0.22, 0.22),
+          rotation: randomBetween(-Math.PI, Math.PI),
+          resetChance: randomBetween(0.976, 0.996),
+        });
+
+        const resizeCanvas = () => {
+          state.width = window.innerWidth;
+          state.height = window.innerHeight;
+          state.dpr = Math.min(window.devicePixelRatio || 1, 2);
+          state.cellSize = Math.max(
+            24,
+            Math.min(44, Math.round(Math.min(state.width, state.height) / 26)),
+          );
+          state.columnStride = state.cellSize / state.density;
+          state.columns = Math.ceil(state.width / state.columnStride) + 2;
+
+          canvas.width = Math.floor(state.width * state.dpr);
+          canvas.height = Math.floor(state.height * state.dpr);
+          canvas.style.width = `${state.width}px`;
+          canvas.style.height = `${state.height}px`;
+
+          ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+          ctx.fillStyle = "#000";
+          ctx.fillRect(0, 0, state.width, state.height);
+
+          state.drops = Array.from(
+            { length: state.columns },
+            (_, index) => state.drops[index] || makeDrop(true),
+          );
+        };
+
+        const resetDrop = (drop) => {
+          drop.y = randomBetween(-state.height * 0.45, -state.cellSize);
+          drop.speed = randomBetween(0.55, 1.9);
+          drop.scale = randomBetween(0.72, 1.18);
+          drop.opacity = randomBetween(0.52, 0.95);
+          drop.drift = randomBetween(-0.22, 0.22);
+          drop.rotation = randomBetween(-Math.PI, Math.PI);
+          drop.resetChance = randomBetween(0.976, 0.996);
+        };
+
+        const drawPasta = (sprite, x, y, drop, isBright) => {
+          const maxSize = state.cellSize * drop.scale;
+          const aspect = sprite.width / sprite.height;
+          const width = aspect >= 1 ? maxSize : maxSize * aspect;
+          const height = aspect >= 1 ? maxSize / aspect : maxSize;
+          const wobble = Math.sin((y + x) * 0.015) * state.cellSize * drop.drift;
+
+          ctx.save();
+          ctx.globalAlpha = isBright ? Math.min(1, drop.opacity + 0.25) : drop.opacity;
+          ctx.shadowColor = isBright ? "#d7ffe3" : "#00ff66";
+          ctx.shadowBlur = isBright ? 22 : 12;
+          ctx.translate(x + state.cellSize / 2 + wobble, y + state.cellSize / 2);
+          ctx.rotate(drop.rotation);
+          ctx.drawImage(sprite, -width / 2, -height / 2, width, height);
+          ctx.restore();
+        };
+
+        const render = (speedMultiplier) => {
+          ctx.globalCompositeOperation = "source-over";
+          ctx.fillStyle = "rgba(0, 0, 0, 0.069)";
+          ctx.fillRect(0, 0, state.width, state.height);
+
+          ctx.globalCompositeOperation = "lighter";
+
+          for (let column = 0; column < state.columns; column += 1) {
+            const drop = state.drops[column];
+            const x = column * state.columnStride;
+            const y = drop.y;
+            const pair = state.sprites[Math.floor(Math.random() * state.sprites.length)];
+            const isBright = Math.random() > 0.78;
+
+            drawPasta(isBright ? pair.bright : pair.green, x, y, drop, isBright);
+
+            drop.y += state.cellSize * drop.speed * speedMultiplier;
+
+            if (
+              drop.y > state.height + state.cellSize * 2 ||
+              (drop.y > state.height * 0.42 && Math.random() > drop.resetChance)
+            ) {
+              resetDrop(drop);
+            }
+          }
+
+          ctx.globalCompositeOperation = "source-over";
+        };
+
+        const animate = (time) => {
+          if (!state.lastTime) {
+            state.lastTime = time;
+          }
+
+          const delta = Math.min(time - state.lastTime, 80);
+          state.lastTime = time;
+          state.frameDebt += delta;
+
+          while (state.frameDebt >= 24) {
+            render(state.frameDebt / 33);
+            state.frameDebt = 0;
+          }
+
+          requestAnimationFrame(animate);
+        };
+
+        const showError = (error) => {
+          const message = document.createElement("div");
+          message.className = "load-error";
+          message.textContent = `${error.message}. Check that this file is being served from the project root.`;
+          document.body.append(message);
+        };
+
+        Promise.all(shapeSources.map(loadImage))
+          .then((images) => {
+            state.sprites = images.map((image) => ({
+              green: makeTintedSprite(image, "#00ff66"),
+              bright: makeTintedSprite(image, "#d6ffe3"),
+            }));
+
+            resizeCanvas();
+            window.addEventListener("resize", resizeCanvas);
+            requestAnimationFrame(animate);
+          })
+          .catch(showError);
+      })();
+    </script>
+  </body>
+</html>
