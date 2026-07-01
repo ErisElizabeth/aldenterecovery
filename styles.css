@@ -49,10 +49,13 @@ body.page-meeting {
 }
 
 .content-card h1,
-.content-card > p {
+.content-card h2,
+.content-card h3 {
   text-align: center;
 }
-
+.content-card > p {
+  padding-left: 1.5rem;
+}
 .content-card ol {
   padding-left: 1.5rem;
 }
