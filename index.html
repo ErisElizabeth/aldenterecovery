@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Al Dente Recovery</title>
+
+    <style>
+      :root {
+        --text: #fff7ec;
+        --shadow: rgba(0, 0, 0, 0.65);
+        --panel: rgba(0, 0, 0, 0.38);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+      }
+
+      body {
+        min-height: 100vh;
+        display: grid;
+        grid-template-rows: 1fr auto;
+        font-family:
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        color: var(--text);
+        text-align: center;
+        padding: 2rem;
+        position: relative;
+        isolation: isolate;
+        overflow-x: hidden;
+        background: #1f1711;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image: url("assets/pasta.jpg");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        opacity: 0.65;
+        z-index: -2;
+      }
+
+      body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.35);
+        z-index: -1;
+      }
+
+      main {
+        display: grid;
+        place-items: center;
+      }
+
+      .hero {
+        max-width: 720px;
+        padding: 2rem;
+        border-radius: 1.5rem;
+        background: var(--panel);
+        box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.35);
+        backdrop-filter: blur(3px);
+      }
+
+      h1 {
+        font-size: clamp(2.75rem, 9vw, 5.5rem);
+        line-height: 1;
+        margin: 0 0 1rem;
+        text-shadow: 0 0.15rem 0.5rem var(--shadow);
+      }
+
+      p {
+        font-size: clamp(1.1rem, 2.5vw, 1.35rem);
+        line-height: 1.55;
+        margin: 0.75rem 0;
+        text-shadow: 0 0.1rem 0.35rem var(--shadow);
+      }
+
+      .ramen {
+        margin-top: 2rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+      }
+
+      footer {
+        max-width: 900px;
+        margin: 2rem auto 0;
+        padding: 1rem;
+        font-size: 0.85rem;
+        line-height: 1.45;
+        color: rgba(255, 247, 236, 0.88);
+        background: rgba(0, 0, 0, 0.35);
+        border-radius: 0.85rem;
+        text-shadow: 0 0.1rem 0.25rem var(--shadow);
+      }
+    </style>
+  </head>
+
+  <body>
+    <main>
+      <section class="hero" aria-labelledby="site-title">
+        <h1 id="site-title">Al Dente Recovery</h1>
+        <p>
+          A secular, pasta-positive recovery project about staying firm,
+          flexible, creative, and alive.
+        </p>
+        <p>More garlic bread coming soon.</p>
+        <p class="ramen">R&rsquo;amen.</p>
+      </section>
+    </main>
+
+    <footer>
+      Al Dente Recovery is a non-commercial, educational, and satirical project.
+      The Flying Spaghetti Monster and Pastafarianism were originally created by
+      Bobby Henderson. This recovery framework is an independent parody and is
+      not affiliated with the official Church of the Flying Spaghetti Monster.
+    </footer>
+  </body>
+</html>
