@@ -1,0 +1,61 @@
+body {
+  --bg-image: url("assets/pasta.jpg");
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: var(--bg-image);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.65;
+  z-index: -2;
+}
+
+body.page-rather {
+  --bg-image: url("assets/pasta2.jpg");
+}
+.site-nav {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+
+.site-nav a {
+  color: var(--text);
+  font-weight: 700;
+  text-decoration: none;
+  padding: 0.55rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.site-nav a:hover,
+.site-nav a:focus {
+  text-decoration: underline;
+}
+
+.content-card {
+  text-align: left;
+}
+
+.content-card h1,
+.content-card > p {
+  text-align: center;
+}
+
+.content-card ol {
+  padding-left: 1.5rem;
+}
+
+.content-card li {
+  margin: 1rem 0;
+  line-height: 1.6;
+  font-size: clamp(1rem, 2.2vw, 1.2rem);
+}
