@@ -18,7 +18,7 @@ body.page-rather {
   --bg-image: url("assets/pasta2.jpg");
 }
 body.page-meeting {
-  --bg-image: url("/assets/pasta2.jpg");
+  --bg-image: url("assets/pasta2.jpg");
 }
 .site-nav {
   position: relative;
